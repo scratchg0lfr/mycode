@@ -1,0 +1,35 @@
+#lets make some comments
+terraform {
+  required_providers {
+    docker = {
+      source  = "kreuzwerker/docker" //this is the source
+      version = "~> 2.22.0"
+    }
+  }
+}
+
+data "http" "iss" {
+  url = "http://api.open-notify.org/astros.json"      // API to send HTTP GET to
+
+  # Optional request headers
+  request_headers = {
+    Accept = "application/json"
+  }
+}
+
+provider "docker" {}
+
+resource "docker_image" "nginx" {
+  name         = "nginx:1.19.6"
+  keep_locally = true    // keep image after "destroy"
+}
+
+resource "docker_container" "nginx" {
+  image = docker_image.nginx.image_id
+  name  = replace(jsondecode(data.http.iss.response_body).people.0.name," ","-") 
+  ports {
+    internal = 80
+    external = 2224
+  }
+}
+
